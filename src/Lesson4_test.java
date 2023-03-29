@@ -9,7 +9,7 @@ public class Lesson4_test {
         for (int i = 0; i < 30; i++) {
             int val = random.nextInt(100);
             System.out.println(i + " val = " + val);
-            colorTree.add(colorTree.root, val);
+            colorTree.add(val);
 //            colorTree.add(colorTree.root, 99);
 //            colorTree.add(colorTree.root,13);
 //            colorTree.add(colorTree.root,5);
