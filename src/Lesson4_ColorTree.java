@@ -27,80 +27,92 @@ public class Lesson4_ColorTree {
         Node right;
     }
 
-    public void add(int value) {
-        Node node = new Node();
-        node.value = value;
-        node.color = Color.RED;
+    public boolean add(Node cur, int value) {
+        Node newNode = new Node();
+        newNode.value = value;
+        newNode.color = Color.RED;
 
 
         if (root == null) {
-            root = node;
+            root = newNode;
             // добавляем цвет корню
             root.color = Color.BLACK;
-        } else {
+            return true;
+        }
             // начинаем обход дерева
-            Node cur = root;
             while (cur != null) {
 
                 if (value == cur.value) { // точка выхода если значение повторяется
                     System.out.println("значение дубль, добавление прервано");
-                    break;
+                    return false;
                 }
+
+
 
                 if (value < cur.value) {
                     if (cur.left == null) { // нашли место в левом потомке
-                        cur.left = node;
-                        rebalance(cur);
-                        break;
+                        cur.left = newNode;
+                        return true;
+                    } else {
+                        boolean result = add(cur.left, value); // если место занято, углубляемся
+                        cur.left = rebalance(cur.left); // пока от корня попытаюсь вызвать
+                        return result;
                     }
-                    cur = cur.left; // углубляемся если есть куда
+
                 } else {
-                    if (cur.right == null) { // нашли место в правом потомке
-                        cur.right = node;
-                        rebalance(cur);
-                        break;
+                    if (cur.right == null) {
+                        cur.right = newNode;
+                        return true;
+                    } else {
+                        boolean result = add(cur.right, value); // если место занято, углубляемся
+                        cur.right = rebalance(cur.right);
+                        return result;
                     }
-                    cur = cur.right; // углубляемся если есть куда
                 }
             }
-        }
+        return false;
     }
 
 
-    private boolean rebalance(Node node) {
+    private Node rebalance(Node node) {
 
         // проверяем наличие детей (просто для удобства вызова)
         Node leftChild = node.left;
         Node rightChild = node.right;
+        Node result = node;
         boolean needRebalance;
 
         do {
             needRebalance = false;
 
-            if (node.color == Color.BLACK && leftChild != null && rightChild != null) { // У чёрной ноды не может быть 2 красных потомка
-                if (leftChild.color == Color.RED && rightChild.color == Color.RED) { // случай если оба потомка красные делаем свап
-                    fullSwap(node);
+            if (result.left != null && result.right != null) { // У чёрной ноды не может быть 2 красных потомка
+                if (result.left.color == Color.RED && result.right.color == Color.RED) { // случай если оба потомка красные делаем свап
+                    fullSwap(result);
                     // если выполнен фуллсвап, правила выше могут быть нарушены, возвращаем вверх по рекурсии флаг
-                    return true;
+                    needRebalance = true;
                 }
             }
 
-            if (rightChild != null && node.right.color == Color.RED) { // если красная правая, делаем правосторонний поворот с валидным выходом (после фуллсвап не выполнится)
-                needRebalance = rebalance(rightSwap(node).left);
+            if (result.right != null && result.right.color == Color.RED) { // если красная правая, делаем правосторонний поворот с валидным выходом (после фуллсвап не выполнится)
+                result = rightSwap(result);
+                needRebalance = true;
             }
 
-            if (node.color == Color.RED) { // • У красной ноды все дети черного цвета
-                if (leftChild != null && leftChild.color == Color.RED) { // если красная левая, это не валид так как родитель тут красный. Выполняем левый поворрот
+            if (result.left != null &&
+                    result.left.color == Color.RED &&
+                    result.left.left != null &&
+                    result.left.left.color == Color.RED) { // • У красной ноды все дети черного цвета
+                 // если красная левая, это не валид так как родитель тут красный. Выполняем левый поворрот
                     // после фуллсвап не выполнится
                     // после правостороннего функция завершится выходом
-                    rebalance(leftSwap(node).right);
-                    return true; // выходим с запросом на повторный ребаланс
-                }
+                    result = leftSwap(result);
+                    needRebalance = true; // выходим с запросом на повторный ребаланс
+
             }
         }
         while (needRebalance); // если с нижней рекурсии пришёл true выполняем проверку ещё раз
 
-        return false;
+        return result;
     }
 
 
@@ -110,12 +122,18 @@ public class Lesson4_ColorTree {
         Node betweenChild = leftChild.right;
 
         rootNode = temp.left; // в рут теперь левый
-        rootNode.right = temp; // справа от рута теперь старый рут
-        rootNode.right.color = Color.RED; // справа от рута обязательно красный
-        rootNode.right.left = betweenChild; // меняем промежуточного
+        rootNode.right = temp; // справа от левого теперь старый рут
+        rootNode.right.left = betweenChild; // Промежуточный слева от старого корня
         rootNode.color = temp.color; // новый рут получает цвет старого
-
+        rootNode.right.color = Color.RED; // справа от рута обязательно красный
         return rootNode;
+
+//        leftChild.right = rootNode;
+//        rootNode.left = betweenChild;
+//        leftChild.color = rootNode.color;
+//        rootNode.color = Color.RED;
+//
+//        return leftChild;
     }
 
     private Node rightSwap(Node rootNode) {
@@ -125,9 +143,9 @@ public class Lesson4_ColorTree {
 
         rootNode = temp.right; // в рут теперь правый
         rootNode.left = temp; // слева от рута теперь старый рут
-        rootNode.left.color = Color.RED; // слева от рута обязательно красный
         rootNode.left.right = betweenChild; // меняем промежуточного
         rootNode.color = temp.color; // новый рут получает цвет старого
+        rootNode.left.color = Color.RED; // слева от рута обязательно красный
 
         return rootNode;
     }
